@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fremont Weather · Seattle</title>
+  <meta name="description" content="Live weather for the Fremont neighborhood of Seattle, WA — current conditions, hourly, and 7-day forecast." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌦️</text></svg>" />
+  <style>
+    :root {
+      --bg: #eef3f8;
+      --bg-grad-1: #dbe7f3;
+      --bg-grad-2: #eef3f8;
+      --card: #ffffff;
+      --card-border: #e2e8f0;
+      --text: #1e293b;
+      --text-soft: #64748b;
+      --text-faint: #94a3b8;
+      --accent: #2563eb;
+      --shadow: 0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --bg-grad-1: #111c30;
+        --bg-grad-2: #0b1220;
+        --card: #111c30;
+        --card-border: #1e2b45;
+        --text: #e2e8f0;
+        --text-soft: #94a3b8;
+        --text-faint: #64748b;
+        --accent: #60a5fa;
+        --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(160deg, var(--bg-grad-1), var(--bg-grad-2));
+      min-height: 100vh;
+      padding: clamp(1rem, 4vw, 3rem);
+      line-height: 1.5;
+    }
+    .wrap { max-width: 880px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 2rem; }
+    header h1 { font-size: clamp(1.5rem, 5vw, 2.25rem); letter-spacing: -.02em; }
+    header p { color: var(--text-soft); font-size: .95rem; margin-top: .25rem; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: clamp(1.25rem, 4vw, 2rem);
+      margin-bottom: 1.25rem;
+    }
+
+    .current { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
+    .current .lead { display: flex; align-items: center; gap: 1rem; }
+    .current .icon { font-size: clamp(3rem, 12vw, 4.5rem); line-height: 1; }
+    .current .temp { font-size: clamp(2.75rem, 11vw, 4rem); font-weight: 700; letter-spacing: -.03em; }
+    .current .desc { color: var(--text-soft); font-size: 1.05rem; }
+    .current .feels { color: var(--text-faint); font-size: .9rem; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .75rem; }
+    .stat { text-align: center; padding: .5rem; }
+    .stat .label { color: var(--text-faint); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+    .stat .value { font-size: 1.35rem; font-weight: 600; margin-top: .15rem; }
+
+    h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text-faint); margin-bottom: .9rem; }
+
+    .hourly { display: flex; gap: .6rem; overflow-x: auto; padding-bottom: .5rem; scrollbar-width: thin; }
+    .hour { flex: 0 0 auto; text-align: center; min-width: 62px; padding: .6rem .35rem; border-radius: 14px; background: rgba(37,99,235,.05); }
+    @media (prefers-color-scheme: dark) { .hour { background: rgba(96,165,250,.08); } }
+    .hour .t { font-size: .78rem; color: var(--text-soft); }
+    .hour .i { font-size: 1.5rem; margin: .3rem 0; }
+    .hour .d { font-weight: 600; font-size: .95rem; }
+
+    .daily { display: flex; flex-direction: column; }
+    .day { display: grid; grid-template-columns: 1.4fr .6fr 2fr; align-items: center; gap: 1rem; padding: .7rem 0; border-top: 1px solid var(--card-border); }
+    .day:first-child { border-top: none; }
+    .day .name { font-weight: 600; }
+    .day .di { font-size: 1.5rem; text-align: center; }
+    .day .range { display: flex; align-items: center; gap: .6rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+    .day .bar { flex: 1; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #60a5fa, #fbbf24, #f87171); opacity: .55; }
+    .day .lo { color: var(--text-faint); }
+
+    footer { text-align: center; color: var(--text-faint); font-size: .8rem; margin-top: 1.5rem; }
+    footer a { color: var(--accent); text-decoration: none; }
+    .updated { text-align: center; color: var(--text-faint); font-size: .8rem; margin-top: .25rem; }
+    .error { text-align: center; color: #ef4444; padding: 2rem; }
+    .loading { text-align: center; color: var(--text-soft); padding: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🌦️ Fremont Weather</h1>
+      <p>The Center of the Universe · Seattle, WA</p>
+    </header>
+
+    <div id="app">
+      <div class="loading">Loading current conditions…</div>
+    </div>
+
+    <footer>
+      Data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+      No tracking, no API key · Refreshes on load
+    </footer>
+  </div>
+
+  <script>
+    // Fremont neighborhood, Seattle, WA
+    const LAT = 47.6510, LON = -122.3500;
+
+    // WMO weather interpretation codes → { emoji, label }
+    const WMO = {
+      0:  ["☀️", "Clear sky"],
+      1:  ["🌤️", "Mainly clear"],
+      2:  ["⛅", "Partly cloudy"],
+      3:  ["☁️", "Overcast"],
+      45: ["🌫️", "Fog"],
+      48: ["🌫️", "Rime fog"],
+      51: ["🌦️", "Light drizzle"],
+      53: ["🌦️", "Drizzle"],
+      55: ["🌧️", "Heavy drizzle"],
+      56: ["🌧️", "Freezing drizzle"],
+      57: ["🌧️", "Freezing drizzle"],
+      61: ["🌦️", "Light rain"],
+      63: ["🌧️", "Rain"],
+      65: ["🌧️", "Heavy rain"],
+      66: ["🌧️", "Freezing rain"],
+      67: ["🌧️", "Freezing rain"],
+      71: ["🌨️", "Light snow"],
+      73: ["🌨️", "Snow"],
+      75: ["❄️", "Heavy snow"],
+      77: ["🌨️", "Snow grains"],
+      80: ["🌦️", "Light showers"],
+      81: ["🌧️", "Showers"],
+      82: ["⛈️", "Violent showers"],
+      85: ["🌨️", "Snow showers"],
+      86: ["❄️", "Heavy snow showers"],
+      95: ["⛈️", "Thunderstorm"],
+      96: ["⛈️", "Thunderstorm w/ hail"],
+      99: ["⛈️", "Severe thunderstorm"],
+    };
+    const wmo = (c) => WMO[c] || ["❓", "Unknown"];
+
+    const API = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code` +
+      `&hourly=temperature_2m,weather_code` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset` +
+      `&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FLos_Angeles&forecast_days=7`;
+
+    const el = (id) => document.getElementById(id);
+    const r = Math.round;
+
+    function fmtHour(iso) {
+      const d = new Date(iso);
+      let h = d.getHours();
+      const ap = h >= 12 ? "p" : "a";
+      h = h % 12 || 12;
+      return `${h}${ap}`;
+    }
+    function fmtDay(iso, i) {
+      if (i === 0) return "Today";
+      return new Date(iso + "T00:00").toLocaleDateString("en-US", { weekday: "short" });
+    }
+    function fmtTime(iso) {
+      return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    }
+
+    function render(data) {
+      const cur = data.current, hr = data.hourly, dy = data.daily;
+      const [cIcon, cLabel] = wmo(cur.weather_code);
+
+      // Find the index of the current hour to start the hourly strip from "now".
+      const nowIso = cur.time.slice(0, 13); // yyyy-mm-ddThh
+      let start = hr.time.findIndex((t) => t.slice(0, 13) === nowIso);
+      if (start < 0) start = 0;
+      const hours = hr.time.slice(start, start + 12);
+
+      const hourlyHtml = hours.map((t, i) => {
+        const idx = start + i;
+        const [ic] = wmo(hr.weather_code[idx]);
+        return `<div class="hour">
+          <div class="t">${i === 0 ? "Now" : fmtHour(t)}</div>
+          <div class="i">${ic}</div>
+          <div class="d">${r(hr.temperature_2m[idx])}°</div>
+        </div>`;
+      }).join("");
+
+      const dailyHtml = dy.time.map((t, i) => {
+        const [ic, lbl] = wmo(dy.weather_code[i]);
+        const pop = dy.precipitation_probability_max[i];
+        return `<div class="day">
+          <div class="name">${fmtDay(t, i)}</div>
+          <div class="di" title="${lbl}">${ic}</div>
+          <div class="range">
+            <span class="lo">${r(dy.temperature_2m_min[i])}°</span>
+            <span class="bar"></span>
+            <span class="hi">${r(dy.temperature_2m_max[i])}°</span>
+            ${pop != null ? `<span title="Chance of precipitation">💧${pop}%</span>` : ""}
+          </div>
+        </div>`;
+      }).join("");
+
+      el("app").innerHTML = `
+        <div class="card current">
+          <div class="lead">
+            <div class="icon">${cIcon}</div>
+            <div>
+              <div class="temp">${r(cur.temperature_2m)}°</div>
+              <div class="desc">${cLabel}</div>
+              <div class="feels">Feels like ${r(cur.apparent_temperature)}°</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat"><div class="label">Wind</div><div class="value">${r(cur.wind_speed_10m)}<span style="font-size:.7em"> mph</span></div></div>
+            <div class="stat"><div class="label">Humidity</div><div class="value">${cur.relative_humidity_2m}%</div></div>
+            <div class="stat"><div class="label">Sunrise</div><div class="value" style="font-size:1rem">${fmtTime(dy.sunrise[0])}</div></div>
+            <div class="stat"><div class="label">Sunset</div><div class="value" style="font-size:1rem">${fmtTime(dy.sunset[0])}</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Next 12 Hours</h2>
+          <div class="hourly">${hourlyHtml}</div>
+        </div>
+
+        <div class="card">
+          <h2>7-Day Forecast</h2>
+          <div class="daily">${dailyHtml}</div>
+        </div>
+
+        <div class="updated">Updated ${fmtTime(cur.time)}</div>
+      `;
+    }
+
+    async function load() {
+      try {
+        const res = await fetch(API);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        render(await res.json());
+      } catch (err) {
+        el("app").innerHTML = `<div class="card error">
+          Couldn't load weather data.<br /><small>${err.message}</small>
+        </div>`;
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
