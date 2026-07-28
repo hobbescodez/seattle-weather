@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+
+# Local Claude Code session settings - machine/session-specific, not project config
+.claude/
+
+# Preview renders
+preview*.png
