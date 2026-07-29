@@ -13,9 +13,9 @@ forecast blend are all unchanged. The only addition here is that the
 observing station and the forecast/sun *location* can be given separately
 (see the lat/lon/location_name arguments on estimate_temp,
 estimate_daily_extremes and estimate_day_curve), so it can run for a spot
-that has no ASOS station of its own - e.g. the Fremont/Aurora neighborhood
+that has no ASOS station of its own - e.g. the Seattle neighborhood
 of Seattle, whose observations come from KBFI (Boeing Field) a few miles
-away while its forecast and sun times are computed at Fremont's own
+away while its forecast and sun times are computed at Seattle's own
 coordinates. When those arguments are omitted the behavior is exactly as
 before: everything is derived from the station itself.
 
@@ -57,8 +57,8 @@ def _resolve_location(station_id, lat, lon, location_name):
     Decide the forecast/sun *location* for an estimate, separately from the
     observing station.
 
-    - If lat/lon are given, use them (this is how the Fremont/Aurora site
-      points the NWS gridpoint forecast and sunrise/sunset at Fremont's own
+    - If lat/lon are given, use them (this is how the Seattle site
+      points the NWS gridpoint forecast and sunrise/sunset at Seattle's own
       coordinates while still reading observations from KBFI). location_name
       labels the spot; it falls back to the station id if not given.
     - If lat/lon are omitted, fall back to the observing station's own
@@ -68,8 +68,8 @@ def _resolve_location(station_id, lat, lon, location_name):
 
     Note there is deliberately no "if the requested location is awkward,
     quietly use some other station instead" path here: a caller that asks
-    for Fremont observations from KBFI and can't get them should surface
-    that, not silently get KSEA/Sea-Tac numbers relabeled as Fremont.
+    for Seattle observations from KBFI and can't get them should surface
+    that, not silently get KSEA/Sea-Tac numbers relabeled as Seattle.
     """
     if lat is None or lon is None:
         s_lat, s_lon, s_name = get_station_location(station_id)
@@ -1387,15 +1387,15 @@ def backtest(station_id, hours_ahead=3, window_obs=8, lookback_days=5):
 
 
 if __name__ == "__main__":
-    # Fremont/Aurora, Seattle: observations from KBFI (Boeing Field),
-    # forecast + sun times at Fremont's own coordinates.
+    # Seattle, Seattle: observations from KBFI (Boeing Field),
+    # forecast + sun times at Seattle's own coordinates.
     station = "KBFI"
-    fremont_lat, fremont_lon = 47.6510, -122.3500
+    seattle_lat, seattle_lon = 47.6510, -122.3500
 
-    print("--- Live estimate (Fremont via KBFI) ---")
+    print("--- Live estimate (Seattle via KBFI) ---")
     print(estimate_temp(
         station, hours_ahead=3,
-        lat=fremont_lat, lon=fremont_lon, location_name="Fremont / Aurora, Seattle",
+        lat=seattle_lat, lon=seattle_lon, location_name="Seattle, Seattle",
     ))
 
     print("\n--- Backtest (KBFI observations, last 5 days) ---")
