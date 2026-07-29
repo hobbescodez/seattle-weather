@@ -260,6 +260,7 @@
         <div id="marine-tint" class="marine-tint"></div>
       </div>
       <div id="map-status" class="map-status"></div>
+      <div id="marine-readout" class="map-status" style="display:none"></div>
       <div class="map-legend hint">Radar: RainViewer · wind &amp; cloud: Open-Meteo · map © OpenStreetMap, © CARTO</div>
     </div>
 
@@ -289,33 +290,43 @@
       function setStatus(m) { if (statusEl && !statusEl.textContent) statusEl.textContent = m || ''; }
       if (typeof L === 'undefined') { setStatus('Map library unavailable.'); return; }
 
+      // Zoom range for the whole-Puget-Sound view. maxZoom is deliberately
+      // modest so the radar layer (native z12) only ever upscales a little.
+      var MAP_MIN = 8, MAP_MAX = 14;
       var map;
       try {
-        map = L.map('map', { center: SEATTLE, zoom: 10, scrollWheelZoom: false });
+        map = L.map('map', { center: SEATTLE, zoom: 9, minZoom: MAP_MIN, maxZoom: MAP_MAX, scrollWheelZoom: false });
       } catch (e) { setStatus('Map could not start.'); return; }
 
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        subdomains: 'abcd', maxZoom: 18, attribution: '© OpenStreetMap, © CARTO'
+        subdomains: 'abcd', maxNativeZoom: 20, maxZoom: MAP_MAX, attribution: '© OpenStreetMap, © CARTO'
       }).addTo(map);
 
       var marineEl = document.getElementById('marine-tint');
+      var marineReadout = document.getElementById('marine-readout');
+      var lowCloudPct = null;
       var layers = { radar: null, wind: L.layerGroup() };
       var on = { radar: true, wind: true, marine: false };
 
-      // Radar — RainViewer (no key)
+      // Radar — RainViewer (no key). RainViewer only generates tiles up to
+      // ~z12, so clamp maxNativeZoom: past that Leaflet upscales the z12 tile
+      // instead of requesting 404 "error tiles".
       fetch('https://api.rainviewer.com/public/weather-maps.json')
         .then(function (r) { if (!r.ok) throw 0; return r.json(); })
         .then(function (d) {
           var past = (d && d.radar && d.radar.past) || [];
           if (!past.length) throw 0;
           var f = past[past.length - 1];
-          layers.radar = L.tileLayer(d.host + f.path + '/256/{z}/{x}/{y}/2/1_1.png', { opacity: 0.65, zIndex: 400 });
+          layers.radar = L.tileLayer(d.host + f.path + '/256/{z}/{x}/{y}/2/1_1.png',
+            { opacity: 0.65, zIndex: 400, maxNativeZoom: 12, maxZoom: MAP_MAX });
           if (on.radar) layers.radar.addTo(map);
         })
         .catch(function () { setStatus('Radar unavailable right now.'); });
 
-      // Wind + marine layer — Open-Meteo (no key)
-      fetch('https://api.open-meteo.com/v1/forecast?latitude=47.62&longitude=-122.34&current=wind_speed_10m,wind_direction_10m,cloud_cover&wind_speed_unit=mph')
+      // Wind + marine layer — Open-Meteo (no key). Marine layer uses
+      // cloud_cover_low (low cloud = the actual marine layer / fog), falling
+      // back to total cloud_cover if low isn't returned.
+      fetch('https://api.open-meteo.com/v1/forecast?latitude=47.62&longitude=-122.34&current=wind_speed_10m,wind_direction_10m,cloud_cover,cloud_cover_low&wind_speed_unit=mph')
         .then(function (r) { if (!r.ok) throw 0; return r.json(); })
         .then(function (d) {
           var c = (d && d.current) || {};
@@ -324,10 +335,21 @@
             html: '<div class="wind-rot" style="transform:rotate(' + ((dir + 180) % 360) + 'deg)">↑</div><div class="wind-spd">' + spd + ' mph</div>' });
           L.marker(SEATTLE, { icon: icon, interactive: false }).addTo(layers.wind);
           if (on.wind) layers.wind.addTo(map);
-          var cloud = (c.cloud_cover != null ? c.cloud_cover : 0) / 100;
-          if (marineEl) marineEl.style.opacity = Math.min(0.6, 0.12 + cloud * 0.5).toFixed(2);
+          lowCloudPct = (c.cloud_cover_low != null ? c.cloud_cover_low
+                        : (c.cloud_cover != null ? c.cloud_cover : 0));
+          if (marineEl) marineEl.style.opacity = Math.min(0.7, (lowCloudPct / 100) * 0.7).toFixed(2);
+          if (on.marine) updateMarineReadout();
         })
         .catch(function () { setStatus('Wind / marine data unavailable right now.'); });
+
+      function updateMarineReadout() {
+        if (!marineReadout) return;
+        if (!on.marine) { marineReadout.style.display = 'none'; return; }
+        marineReadout.style.display = 'block';
+        if (lowCloudPct == null) { marineReadout.textContent = 'Marine layer: loading…'; return; }
+        marineReadout.textContent = 'Marine layer: ' + Math.round(lowCloudPct) + '% low cloud'
+          + (lowCloudPct < 10 ? ' — skies essentially clear' : '');
+      }
 
       // Layer toggles
       var btns = document.querySelectorAll('.map-btn');
@@ -338,6 +360,7 @@
           this.classList.toggle('is-on', on[key]);
           if (key === 'marine') {
             if (marineEl) marineEl.style.display = on[key] ? 'block' : 'none';
+            updateMarineReadout();
           } else if (layers[key]) {
             if (on[key]) { layers[key].addTo(map); } else { map.removeLayer(layers[key]); }
           }
