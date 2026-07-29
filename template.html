@@ -290,9 +290,11 @@
       function setStatus(m) { if (statusEl && !statusEl.textContent) statusEl.textContent = m || ''; }
       if (typeof L === 'undefined') { setStatus('Map library unavailable.'); return; }
 
-      // Zoom range for the whole-Puget-Sound view. maxZoom is deliberately
-      // modest so the radar layer (native z12) only ever upscales a little.
-      var MAP_MIN = 8, MAP_MAX = 14;
+      // Zoom range for the whole-Puget-Sound view. Capped low on purpose:
+      // RainViewer serves a "zoom level not supported" placeholder tile (a
+      // 200 response, so it can't be caught as a load error) above its radar
+      // coverage, so we never let the map request a radar zoom past that.
+      var MAP_MIN = 8, MAP_MAX = 11;
       var map;
       try {
         map = L.map('map', { center: SEATTLE, zoom: 9, minZoom: MAP_MIN, maxZoom: MAP_MAX, scrollWheelZoom: false });
@@ -308,9 +310,9 @@
       var layers = { radar: null, wind: L.layerGroup() };
       var on = { radar: true, wind: true, marine: false };
 
-      // Radar — RainViewer (no key). RainViewer only generates tiles up to
-      // ~z12, so clamp maxNativeZoom: past that Leaflet upscales the z12 tile
-      // instead of requesting 404 "error tiles".
+      // Radar — RainViewer (no key). Clamp maxNativeZoom to a level RainViewer
+      // reliably serves; above it (up to the map's own maxZoom) Leaflet upscales
+      // that tile instead of requesting the "zoom not supported" placeholder.
       fetch('https://api.rainviewer.com/public/weather-maps.json')
         .then(function (r) { if (!r.ok) throw 0; return r.json(); })
         .then(function (d) {
@@ -318,7 +320,7 @@
           if (!past.length) throw 0;
           var f = past[past.length - 1];
           layers.radar = L.tileLayer(d.host + f.path + '/256/{z}/{x}/{y}/2/1_1.png',
-            { opacity: 0.65, zIndex: 400, maxNativeZoom: 12, maxZoom: MAP_MAX });
+            { opacity: 0.65, zIndex: 400, maxNativeZoom: 10, maxZoom: MAP_MAX });
           if (on.radar) layers.radar.addTo(map);
         })
         .catch(function () { setStatus('Radar unavailable right now.'); });
