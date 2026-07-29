@@ -4,148 +4,173 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{location_name}} Weather · Seattle</title>
-  <meta name="description" content="A friendly, honest weather estimate for the {{location_name}} neighborhood of Seattle — with the real uncertainty kept in, explained in plain language." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>{{hero_emoji}}</text></svg>" />
+  <meta name="description" content="A friendly, honest weather estimate for the {{location_name}} neighborhood of Seattle — the real model, in plain language." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛅</text></svg>" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --card: rgba(255,255,255,.82);
-      --card-strong: rgba(255,255,255,.92);
-      --ink: #17233a;
-      --ink-soft: #46566f;
-      --ink-faint: #74839a;
-      --line: rgba(23,35,58,.1);
-      --accent: #2563eb;
+      --text-strong: #ffffff;
+      --text-soft: rgba(255,255,255,.84);
+      --text-faint: rgba(255,255,255,.58);
+      --accent: #ffd60a;
+      --accent-soft: rgba(255,214,10,.9);
+      --glass-bg: rgba(255,255,255,.15);
+      --glass-bg-strong: rgba(255,255,255,.22);
+      --glass-border: rgba(255,255,255,.26);
+      --glass-line: rgba(255,255,255,.18);
       --radius: 22px;
-      --shadow: 0 2px 6px rgba(15,23,42,.08), 0 16px 40px rgba(15,23,42,.14);
     }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color: var(--ink);
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body.scene {
+      position: relative;
       min-height: 100vh;
-      line-height: 1.55;
+      display: flex;
+      justify-content: center;
+      padding: clamp(2rem,7vw,3.5rem) clamp(1rem,4vw,1.25rem) 3rem;
+      overflow-x: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-strong);
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
-      background: #cdd8e6 fixed;
-      transition: background 1.2s ease;
+      transition: background 1s ease;
     }
-    /* --- weather moods: the background shifts with real conditions --- */
-    body.mood-sunny        { background: linear-gradient(165deg,#8ec5ff 0%,#d8ecff 42%,#fff4d6 100%) fixed; }
-    body.mood-partly       { background: linear-gradient(165deg,#9db8d6 0%,#cfe0f0 55%,#eef3f8 100%) fixed; }
-    body.mood-cloudy       { background: linear-gradient(165deg,#9aa6b6 0%,#c2cdd9 60%,#dbe2ea 100%) fixed; }
-    body.mood-rain         { background: linear-gradient(165deg,#5f7185 0%,#8090a3 55%,#a9b6c4 100%) fixed; }
-    body.mood-storm        { background: linear-gradient(165deg,#414a5c 0%,#5b6577 55%,#828fa0 100%) fixed; }
-    body.mood-snow         { background: linear-gradient(165deg,#aebbca 0%,#dbe5ef 55%,#f4f8fc 100%) fixed; }
-    body.mood-clear-night  { background: linear-gradient(165deg,#101a30 0%,#1d2b48 55%,#33405f 100%) fixed; color:#eaf0fb; }
-    body.mood-cloudy-night { background: linear-gradient(165deg,#1a2233 0%,#2b3346 55%,#434c60 100%) fixed; color:#eaf0fb; }
-    /* Night moods flip the card palette to stay readable */
-    body.mood-clear-night, body.mood-cloudy-night {
-      --card: rgba(24,34,54,.72); --card-strong: rgba(30,42,66,.86);
-      --ink:#eaf0fb; --ink-soft:#b9c5db; --ink-faint:#8494b0; --line:rgba(255,255,255,.12);
-      --accent:#7fb0ff;
-    }
-    body.mood-rain, body.mood-storm {
-      --card: rgba(28,38,54,.62); --card-strong: rgba(30,42,60,.8);
-      --ink:#f2f6fc; --ink-soft:#cdd8e6; --ink-faint:#9fb0c4; --line:rgba(255,255,255,.14);
-      --accent:#9fc3ff;
+    /* Sky backdrop is a live fact — picked from real cloud cover + day/night. */
+    body[data-sky="day-clear"]   { background: linear-gradient(175deg,#1c7fe0 0%,#4aa3ec 42%,#8ed2f7 100%) fixed; }
+    body[data-sky="day-cloudy"]  { background: linear-gradient(175deg,#64748a 0%,#8794a6 45%,#b8c3cd 100%) fixed; }
+    body[data-sky="night-clear"] { background: linear-gradient(175deg,#050a1e 0%,#101a3c 45%,#263a68 100%) fixed; }
+    body[data-sky="night-cloudy"]{ background: linear-gradient(175deg,#191c24 0%,#2a2e39 45%,#3d434f 100%) fixed; }
+
+    /* Day skies are too light for near-white text — tint the glass navy so
+       contrast stays readable (same fix the main dashboard uses). */
+    body[data-sky^="day"] {
+      --glass-bg: rgba(8,20,40,.62);
+      --glass-bg-strong: rgba(8,20,40,.76);
+      --text-faint: rgba(255,255,255,.72);
     }
 
-    .wrap { max-width: 660px; margin: 0 auto; padding: clamp(1rem, 4vw, 2.5rem) clamp(1rem,4vw,1.5rem) 3rem; }
+    /* sun glow / starfield accents */
+    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; }
+    body[data-sky="day-clear"]::before   { background: radial-gradient(circle at 82% 5%, rgba(255,255,255,.55), rgba(255,255,255,0) 34%); }
+    body[data-sky="night-clear"]::before {
+      background-image:
+        radial-gradient(1.4px 1.4px at 18% 12%, rgba(255,255,255,.85), transparent),
+        radial-gradient(1px 1px at 68% 8%, rgba(255,255,255,.6), transparent),
+        radial-gradient(1.4px 1.4px at 84% 20%, rgba(255,255,255,.75), transparent),
+        radial-gradient(1px 1px at 38% 6%, rgba(255,255,255,.5), transparent),
+        radial-gradient(1.4px 1.4px at 54% 15%, rgba(255,255,255,.65), transparent),
+        radial-gradient(1px 1px at 9% 24%, rgba(255,255,255,.5), transparent),
+        radial-gradient(1.4px 1.4px at 93% 13%, rgba(255,255,255,.7), transparent);
+    }
 
-    /* --- hero --- */
-    .hero { text-align: center; padding: 1.5rem 0 1.75rem; }
-    .hero .emoji { font-size: clamp(3.5rem, 16vw, 5.5rem); line-height: 1; filter: drop-shadow(0 6px 14px rgba(0,0,0,.15)); }
-    .hero .temp { font-size: clamp(4rem, 22vw, 6.5rem); font-weight: 800; letter-spacing: -.04em; margin-top: .25rem; }
-    .hero .cond { font-size: clamp(1.1rem, 5vw, 1.4rem); font-weight: 600; }
-    .hero .place { font-size: .95rem; color: var(--ink-soft); margin-top: .35rem; }
-    .hero .vibe { font-size: 1.02rem; color: var(--ink-soft); margin-top: .9rem; max-width: 30rem; margin-inline: auto; }
+    .content { position: relative; z-index: 1; width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 1.25rem; }
+
+    /* --- animated weather icons --- */
+    .wx { display: inline-block; line-height: 0; }
+    .wx svg { display: block; width: 100%; height: 100%; }
+    .wx-hero { width: clamp(124px,36vw,172px); height: clamp(124px,36vw,172px); margin: 0 auto; filter: drop-shadow(0 8px 22px rgba(0,0,0,.28)); }
+    .wx-metric { width: 34px; height: 34px; flex: 0 0 auto; }
+    .wx-signal { width: 38px; height: 38px; flex: 0 0 auto; }
+
+    /* --- place + hero --- */
+    .place { text-align: center; }
+    .eyebrow { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); }
+    .place-name { font-size: 1.35rem; font-weight: 600; margin-top: .2rem; }
+    .place-updated { font-size: .8rem; color: var(--text-faint); margin-top: .25rem; }
+
+    .hero { text-align: center; }
+    .hero-temp { font-size: clamp(84px,25vw,120px); font-weight: 200; line-height: .95; letter-spacing: -3px; font-variant-numeric: tabular-nums; }
+    .hero-temp sup { font-size: .3em; font-weight: 300; top: -.62em; }
+    .hero-condition { font-size: 1.15rem; font-weight: 500; color: var(--text-soft); margin-top: .1rem; }
+    .hero-vibe { font-size: 1rem; color: var(--text-soft); margin: .7rem auto 0; max-width: 24rem; }
     .chips { display: flex; gap: .4rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
-    .chip {
-      background: var(--card); border: 1px solid var(--line); border-radius: 999px;
-      padding: .3rem .7rem; font-size: .82rem; color: var(--ink-soft); backdrop-filter: blur(8px);
-      font-variant-numeric: tabular-nums;
-    }
+    .chip { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 999px; padding: .32rem .7rem; font-size: .8rem; color: var(--text-soft); backdrop-filter: blur(14px); font-variant-numeric: tabular-nums; }
 
-    /* --- cards --- */
+    /* --- glass cards --- */
     .card {
-      background: var(--card); backdrop-filter: blur(14px);
-      border: 1px solid var(--line); border-radius: var(--radius);
-      box-shadow: var(--shadow); padding: clamp(1.2rem, 4vw, 1.7rem);
-      margin-bottom: 1.1rem;
+      background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius);
+      padding: clamp(1.2rem,4.5vw,1.6rem); backdrop-filter: blur(24px) saturate(150%); -webkit-backdrop-filter: blur(24px) saturate(150%);
     }
-    .card.feature { background: var(--card-strong); }
-    .eyebrow { font-size: .74rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-faint); font-weight: 700; }
-    .big-est { font-size: clamp(2.6rem, 12vw, 3.4rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; margin: .3rem 0 .1rem; }
-    .est-sub { color: var(--ink-soft); font-size: .95rem; }
-    .conf { margin-top: .9rem; font-weight: 650; }
-    .band { margin-top: .5rem; color: var(--ink-soft); }
-    .band strong { color: var(--ink); }
-    .widen { margin-top: .5rem; color: var(--ink-soft); font-size: .95rem; }
+    .card.feature { background: var(--glass-bg-strong); }
+    .card + .card, .content > .card { }
+    .card-eyebrow { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); }
 
-    /* --- expandable "why?" --- */
-    details.why { margin-top: .8rem; border-top: 1px solid var(--line); padding-top: .7rem; }
-    details.why summary {
-      cursor: pointer; font-weight: 650; color: var(--accent); font-size: .92rem;
-      list-style: none; display: inline-flex; align-items: center; gap: .35rem;
-    }
+    .est-when { color: var(--text-soft); font-size: .95rem; margin-top: .5rem; }
+    .est-num { font-size: clamp(2.7rem,13vw,3.5rem); font-weight: 300; letter-spacing: -1.5px; line-height: 1.02; color: var(--accent); margin-top: .1rem; }
+    .est-num .lead { color: var(--text-soft); font-size: .34em; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; display: block; margin-bottom: .1rem; }
+    .conf { margin-top: .9rem; font-weight: 600; font-size: 1.02rem; }
+    .band { margin-top: .45rem; color: var(--text-soft); }
+    .band strong { color: var(--text-strong); font-weight: 700; }
+    .widen { margin-top: .5rem; color: var(--text-soft); font-size: .92rem; }
+
+    /* --- "why?" disclosure --- */
+    details.why { margin-top: .85rem; border-top: 1px solid var(--glass-line); padding-top: .7rem; }
+    details.why summary { cursor: pointer; font-weight: 600; color: var(--accent-soft); font-size: .9rem; list-style: none; display: inline-flex; align-items: center; gap: .35rem; }
     details.why summary::-webkit-details-marker { display: none; }
-    details.why summary::before { content: "›"; display: inline-block; transition: transform .2s ease; font-size: 1.1em; }
+    details.why summary::before { content: "›"; display: inline-block; transition: transform .2s ease; font-size: 1.15em; }
     details.why[open] summary::before { transform: rotate(90deg); }
-    .why-body { margin-top: .6rem; color: var(--ink-soft); font-size: .92rem; }
+    .why-body { margin-top: .6rem; color: var(--text-soft); font-size: .9rem; }
     .why-body p { margin-bottom: .55rem; }
     .why-body p:last-child { margin-bottom: 0; }
-    .why-body strong { color: var(--ink); }
+    .why-body strong { color: var(--text-strong); }
 
     /* --- sparkline --- */
     .spark-wrap { margin-top: 1rem; }
     .sparkline { width: 100%; height: auto; display: block; }
-    .spark-area { fill: rgba(37,99,235,.12); stroke: none; }
-    .spark-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
-    .spark-proj { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 5 5; opacity: .8; }
-    .spark-est-guide { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 2 3; opacity: .5; }
-    .spark-now-dot { fill: var(--accent); }
-    .spark-est-dot-halo { fill: rgba(37,99,235,.18); }
-    .spark-est-dot { fill: #fff; stroke: var(--accent); stroke-width: 2.5; }
-    .spark-est-label { fill: var(--ink); font-size: 15px; font-weight: 800; font-family: inherit; }
-    .spark-caption { display: flex; justify-content: space-between; color: var(--ink-faint); font-size: .78rem; margin-top: .3rem; }
+    .spark-area { fill: rgba(255,255,255,.1); stroke: none; }
+    .spark-line { fill: none; stroke: rgba(255,255,255,.9); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+    .spark-proj { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 5 5; }
+    .spark-est-guide { stroke: rgba(255,255,255,.4); stroke-width: 1; stroke-dasharray: 2 3; }
+    .spark-now-dot { fill: #fff; }
+    .spark-est-dot-halo { fill: rgba(255,214,10,.28); }
+    .spark-est-dot { fill: var(--accent); stroke: rgba(0,0,0,.15); stroke-width: 1; }
+    .spark-est-label { fill: var(--accent); font-size: 15px; font-weight: 800; font-family: inherit; }
+    .spark-caption { display: flex; justify-content: space-between; color: var(--text-faint); font-size: .76rem; margin-top: .3rem; }
 
-    /* --- two-up (today high/low) --- */
-    .two-up { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
-    @media (max-width: 460px) { .two-up { grid-template-columns: 1fr; } }
-    .metric .num { font-size: clamp(2.2rem, 10vw, 2.8rem); font-weight: 800; letter-spacing: -.03em; }
-    .metric .cap { color: var(--ink-soft); font-size: .9rem; margin-top: .1rem; }
+    /* --- today two-up --- */
+    .two-up { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: .85rem; }
+    @media (max-width: 440px) { .two-up { grid-template-columns: 1fr; } }
+    .metric-head { display: flex; align-items: center; gap: .5rem; }
+    .metric-label { font-size: .72rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--text-faint); }
+    .metric-num { font-size: clamp(2rem,9vw,2.5rem); font-weight: 300; letter-spacing: -1px; margin-top: .15rem; font-variant-numeric: tabular-nums; }
+    .metric-cap { color: var(--text-soft); font-size: .88rem; margin-top: .1rem; }
 
     /* --- tomorrow --- */
-    .tmrw-row { display: flex; align-items: baseline; gap: 1.4rem; margin: .4rem 0 .2rem; }
-    .tmrw-row .pair { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; }
-    .tmrw-row .pair small { font-size: .95rem; color: var(--ink-faint); font-weight: 600; margin-left: .2rem; }
+    .tmrw-row { display: flex; align-items: baseline; gap: 1.5rem; margin: .55rem 0 .3rem; }
+    .tmrw-pair { font-size: 1.9rem; font-weight: 300; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+    .tmrw-pair small { font-size: .5em; color: var(--text-faint); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin-left: .3rem; }
 
     /* --- signals --- */
-    .signal { display: flex; gap: .7rem; align-items: flex-start; padding: .55rem 0; border-top: 1px solid var(--line); }
-    .signal:first-child { border-top: none; }
-    .signal-emoji { font-size: 1.4rem; line-height: 1.3; flex: 0 0 auto; }
-    .signal-caveat { margin-top: .8rem; color: var(--ink-faint); font-size: .84rem; font-style: italic; }
+    .signal { display: flex; gap: .75rem; align-items: flex-start; padding: .65rem 0; border-top: 1px solid var(--glass-line); }
+    .signal:first-of-type { border-top: none; }
+    .signal-text { color: var(--text-soft); font-size: .92rem; padding-top: .15rem; }
+    .signal-caveat { margin-top: .8rem; color: var(--text-faint); font-size: .82rem; font-style: italic; }
 
-    .hint { color: var(--ink-faint); font-size: .9rem; }
-    h2.card-title { font-size: 1.05rem; margin-bottom: .2rem; }
-    .yesterday { text-align: center; color: var(--ink-soft); font-size: .9rem; margin: .2rem 0 1.1rem; }
+    .card-title { font-size: 1.02rem; font-weight: 600; margin-bottom: .1rem; }
+    .hint { color: var(--text-faint); font-size: .88rem; }
+    .yesterday { text-align: center; color: var(--text-faint); font-size: .86rem; }
 
-    footer { text-align: center; color: var(--ink-faint); font-size: .82rem; margin-top: 1.5rem; }
-    footer a { color: var(--accent); text-decoration: none; }
-    footer details { margin: 0 auto 1rem; max-width: 34rem; text-align: left; }
-    footer summary { cursor: pointer; font-weight: 650; color: var(--ink-soft); text-align: center; }
+    footer { text-align: center; color: var(--text-faint); font-size: .8rem; margin-top: .5rem; }
+    footer details { text-align: left; margin-bottom: .9rem; }
+    footer summary { cursor: pointer; font-weight: 600; color: var(--text-soft); text-align: center; }
     footer .why-body { margin-top: .7rem; }
-    .updated { margin-top: .4rem; }
+    footer a { color: var(--accent-soft); text-decoration: none; }
+    .footmeta { margin-top: .3rem; }
   </style>
 </head>
-<body class="{{mood_class}}">
-  <div class="wrap">
+<body class="scene" data-sky="{{sky_code}}">
+  <div class="content">
+
+    <div class="place">
+      <div class="eyebrow">Right now</div>
+      <div class="place-name">{{location_name}}, Seattle</div>
+      <div class="place-updated">as of {{as_of_time}} · {{as_of_date}}</div>
+    </div>
 
     <div class="hero">
-      <div class="emoji">{{hero_emoji}}</div>
-      <div class="temp">{{current_temp}}°</div>
-      <div class="cond">{{condition_text}}</div>
-      <div class="place">{{location_name}}, Seattle · as of {{as_of_time}}</div>
-      <div class="vibe">{{vibe_phrase}}</div>
+      <span class="wx wx-hero">{{hero_icon_svg}}</span>
+      <div class="hero-temp">{{current_temp}}<sup>°</sup></div>
+      <div class="hero-condition">{{condition_text}}</div>
+      <div class="hero-vibe">{{vibe_phrase}}</div>
       <div class="chips">
         <span class="chip">💨 {{wind_txt}}</span>
         <span class="chip">☁️ {{cloud_txt}}</span>
@@ -153,10 +178,10 @@
       </div>
     </div>
 
-    <!-- The estimate, with the honest uncertainty kept in -->
+    <!-- The estimate — honest uncertainty kept in -->
     <div class="card feature">
-      <div class="eyebrow">In about {{hours_ahead}} hours ({{target_time}})</div>
-      <div class="big-est">around {{estimated_temp}}°</div>
+      <div class="card-eyebrow">The next few hours</div>
+      <div class="est-num"><span class="lead">Around {{target_time}}</span>{{estimated_temp}}<sup>°</sup></div>
       <div class="conf">{{conf_headline}}</div>
       <div class="band">{{band_html}}</div>
       <div class="widen">{{widen_html}}</div>
@@ -170,18 +195,18 @@
 
     <!-- Today -->
     <div class="card">
-      <h2 class="card-title">Today in {{location_name}}</h2>
-      <div class="two-up" style="margin-top:.8rem">
+      <div class="card-eyebrow">Today in {{location_name}}</div>
+      <div class="two-up">
         <div class="metric">
-          <div class="eyebrow">High</div>
-          <div class="num">{{daily_high}}°</div>
-          <div class="cap">{{high_caption}}</div>
+          <div class="metric-head"><span class="wx wx-metric">{{high_icon_svg}}</span><span class="metric-label">High</span></div>
+          <div class="metric-num">{{daily_high}}°</div>
+          <div class="metric-cap">{{high_caption}}</div>
           {{high_why}}
         </div>
         <div class="metric">
-          <div class="eyebrow">Low</div>
-          <div class="num">{{daily_low}}°</div>
-          <div class="cap">{{low_caption}}</div>
+          <div class="metric-head"><span class="wx wx-metric">{{low_icon_svg}}</span><span class="metric-label">Low</span></div>
+          <div class="metric-num">{{daily_low}}°</div>
+          <div class="metric-cap">{{low_caption}}</div>
           {{low_why}}
         </div>
       </div>
@@ -189,42 +214,39 @@
 
     <!-- Tomorrow -->
     <div class="card">
-      <h2 class="card-title">Tomorrow</h2>
+      <div class="card-eyebrow">Tomorrow</div>
       <div class="tmrw-row">
-        <div class="pair">{{tomorrow_high}}° <small>high</small></div>
-        <div class="pair">{{tomorrow_low}}° <small>low</small></div>
+        <span class="tmrw-pair">{{tomorrow_high}}°<small>high</small></span>
+        <span class="tmrw-pair">{{tomorrow_low}}°<small>low</small></span>
       </div>
       <p class="hint">{{tomorrow_note}}</p>
     </div>
 
-    <!-- What might change things -->
+    <!-- What might change -->
     <div class="card">
-      <h2 class="card-title">What might change things</h2>
-      <div style="margin-top:.6rem">{{signals_html}}</div>
+      <div class="card-eyebrow">What might change things</div>
+      <div style="margin-top:.7rem">{{signals_html}}</div>
     </div>
 
     <div class="yesterday">{{yesterday_line}}</div>
 
     <footer>
       <details>
-        <summary>How does this work? (and why the honesty)</summary>
+        <summary>How this works (and why the honesty)</summary>
         <div class="why-body">
-          <p>Most weather apps hand you a single confident number. This one shows you an
-          estimate <em>and</em> how sure we actually are — because a few hours out, nobody
-          really knows the temperature to the degree.</p>
-          <p>Under the hood it's a real model: it reads live observations from
-          {{obs_station_label}}, measures the recent temperature trend, and adjusts for
-          where we are in the day's natural rise and fall (temperatures behave very
-          differently at dawn versus mid-afternoon). It then blends in the National Weather
-          Service's own hourly forecast for {{location_name}}'s exact location, and watches
-          weather stations around Puget Sound for early signs of a marine push or a heat
-          surge moving in.</p>
-          <p>When those signals get noisy, the estimate's range widens — and we tell you
-          why, instead of hiding it behind a clean-looking number.</p>
+          <p>Most weather apps hand you one confident number. This one shows an estimate
+          <em>and</em> how sure we actually are — because a few hours out, nobody knows the
+          temperature to the degree.</p>
+          <p>It's a real model: it reads live observations from {{obs_station_label}},
+          measures the recent temperature trend, adjusts for where we are in the day's natural
+          rise and fall, blends in the National Weather Service's own hourly forecast for
+          {{location_name}}, and watches stations around Puget Sound for an incoming marine
+          push or heat surge. When those signals get noisy, the range widens — and we tell you
+          why instead of hiding it.</p>
         </div>
       </details>
       <div>Observations: {{obs_station_label}} · Forecast: NWS gridpoint for {{location_name}}</div>
-      <div class="updated">Updated {{generated_at}} · no ads, no tracking, no accounts</div>
+      <div class="footmeta">Updated {{generated_at}} · animated icons by <a href="https://github.com/basmilius/weather-icons" target="_blank" rel="noopener">Meteocons</a> · no ads, no tracking</div>
     </footer>
 
   </div>
