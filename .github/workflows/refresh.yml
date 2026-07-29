@@ -1,0 +1,71 @@
+name: Refresh Fremont Weather
+
+# Regenerates docs/index.html (served by GitHub Pages) from live data by
+# running the model in build_site.py. api.weather.gov is used fully
+# unauthenticated - no repo secrets are configured or needed. There is no
+# Kalshi, no market data, and no SMS alerting here, so none of those
+# credentials are involved either.
+#
+# A note on the `schedule` trigger below: GitHub's own scheduled-workflow
+# cron is known to fire late or skip runs under load, so treat the hourly
+# refresh as best-effort. The page renders a fresh snapshot on every run and
+# always shows the "Updated ..." time it was built, so a delayed run just
+# means a slightly older timestamp - never stale-looking data presented as
+# current. workflow_dispatch is kept for on-demand manual refreshes.
+
+on:
+  schedule:
+    - cron: "17 * * * *" # hourly, best-effort (see note above)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write # needed to commit docs/index.html back to the repo
+
+concurrency:
+  group: refresh-fremont
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build page
+        run: python3 build_site.py
+
+      - name: Commit and push docs/index.html if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docs/index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Automated Fremont weather refresh"
+
+          pushed=false
+          for i in 1 2 3; do
+            if git pull --rebase origin "${{ github.ref_name }}" && \
+               git push origin HEAD:"${{ github.ref_name }}"; then
+              pushed=true
+              break
+            fi
+            echo "Push attempt $i failed, retrying..."
+            sleep 5
+          done
+          if [ "$pushed" != true ]; then
+            echo "::error::Failed to push docs/index.html after 3 attempts."
+            exit 1
+          fi

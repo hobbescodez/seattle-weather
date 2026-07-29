@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fremont Weather · Seattle</title>
-  <meta name="description" content="A friendly, honest weather estimate for the Fremont neighborhood of Seattle — with the real uncertainty kept in, explained in plain language." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☁️</text></svg>" />
+  <title>{{location_name}} Weather · Seattle</title>
+  <meta name="description" content="A friendly, honest weather estimate for the {{location_name}} neighborhood of Seattle — with the real uncertainty kept in, explained in plain language." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>{{hero_emoji}}</text></svg>" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -137,61 +137,52 @@
     .updated { margin-top: .4rem; }
   </style>
 </head>
-<body class="mood-cloudy">
+<body class="{{mood_class}}">
   <div class="wrap">
 
     <div class="hero">
-      <div class="emoji">☁️</div>
-      <div class="temp">73°</div>
-      <div class="cond">Mostly Sunny</div>
-      <div class="place">Fremont, Seattle · as of 3:25 pm</div>
-      <div class="vibe">Grey and overcast — the usual soft Seattle light.</div>
+      <div class="emoji">{{hero_emoji}}</div>
+      <div class="temp">{{current_temp}}°</div>
+      <div class="cond">{{condition_text}}</div>
+      <div class="place">{{location_name}}, Seattle · as of {{as_of_time}}</div>
+      <div class="vibe">{{vibe_phrase}}</div>
       <div class="chips">
-        <span class="chip">💨 9 mph</span>
-        <span class="chip">☁️ 100% cloud cover</span>
-        <span class="chip">☔ 1%</span>
+        <span class="chip">💨 {{wind_txt}}</span>
+        <span class="chip">☁️ {{cloud_txt}}</span>
+        {{pop_chip}}
       </div>
     </div>
 
     <!-- The estimate, with the honest uncertainty kept in -->
     <div class="card feature">
-      <div class="eyebrow">In about 3 hours (tue 6:25 pm)</div>
-      <div class="big-est">around 73°</div>
-      <div class="conf">Honestly, this is a rough guess right now.</div>
-      <div class="band">Most likely between <strong>71°</strong> and <strong>75°</strong> (about ±2°, a normal amount of wiggle room).</div>
-      <div class="widen">We widened the range because the air pressure here is dropping, which often means a weather system is moving in.</div>
+      <div class="eyebrow">In about {{hours_ahead}} hours ({{target_time}})</div>
+      <div class="big-est">around {{estimated_temp}}°</div>
+      <div class="conf">{{conf_headline}}</div>
+      <div class="band">{{band_html}}</div>
+      <div class="widen">{{widen_html}}</div>
       <div class="spark-wrap">
-        <svg viewBox="0 0 640 170" class="sparkline" preserveAspectRatio="none" role="img" aria-label="Temperature over the last 6 hours and the estimate for a few hours ahead">
-  <path d="M 8.0,127.5 L 13.8,127.5 L 19.6,127.5 L 25.3,127.5 L 31.1,127.5 L 36.9,102.4 L 40.4,127.5 L 42.7,127.5 L 48.4,102.4 L 54.2,102.4 L 60.0,102.4 L 65.8,77.2 L 71.6,102.4 L 77.3,102.4 L 83.1,102.4 L 88.9,77.2 L 100.4,77.2 L 106.2,77.2 L 109.7,99.8 L 117.8,102.4 L 123.6,102.4 L 129.3,102.4 L 135.1,102.4 L 140.9,77.2 L 146.7,77.2 L 152.4,77.2 L 158.2,77.2 L 164.0,77.2 L 169.8,52.0 L 175.6,52.0 L 179.0,57.0 L 181.3,77.2 L 187.1,77.2 L 198.7,52.0 L 204.4,77.2 L 210.2,77.2 L 216.0,77.2 L 221.8,77.2 L 227.6,52.0 L 233.3,77.2 L 239.1,77.2 L 248.4,72.2 L 250.7,77.2 L 256.4,77.2 L 262.2,52.0 L 268.0,52.0 L 273.8,52.0 L 279.6,52.0 L 285.3,52.0 L 291.1,52.0 L 296.9,52.0 L 302.7,52.0 L 308.4,52.0 L 314.2,52.0 L 317.7,57.0 L 320.0,52.0 L 325.8,52.0 L 331.6,77.2 L 337.3,77.2 L 343.1,77.2 L 348.9,77.2 L 354.7,77.2 L 360.4,52.0 L 366.2,52.0 L 372.0,52.0 L 377.8,52.0 L 383.6,52.0 L 387.0,44.5 L 389.3,52.0 L 395.1,52.0 L 400.9,52.0 L 406.7,52.0 L 418.2,77.2 L 424.0,52.0 L 424.0,140 L 8.0,140 Z" class="spark-area" />
-  <path d="M 8.0,127.5 L 13.8,127.5 L 19.6,127.5 L 25.3,127.5 L 31.1,127.5 L 36.9,102.4 L 40.4,127.5 L 42.7,127.5 L 48.4,102.4 L 54.2,102.4 L 60.0,102.4 L 65.8,77.2 L 71.6,102.4 L 77.3,102.4 L 83.1,102.4 L 88.9,77.2 L 100.4,77.2 L 106.2,77.2 L 109.7,99.8 L 117.8,102.4 L 123.6,102.4 L 129.3,102.4 L 135.1,102.4 L 140.9,77.2 L 146.7,77.2 L 152.4,77.2 L 158.2,77.2 L 164.0,77.2 L 169.8,52.0 L 175.6,52.0 L 179.0,57.0 L 181.3,77.2 L 187.1,77.2 L 198.7,52.0 L 204.4,77.2 L 210.2,77.2 L 216.0,77.2 L 221.8,77.2 L 227.6,52.0 L 233.3,77.2 L 239.1,77.2 L 248.4,72.2 L 250.7,77.2 L 256.4,77.2 L 262.2,52.0 L 268.0,52.0 L 273.8,52.0 L 279.6,52.0 L 285.3,52.0 L 291.1,52.0 L 296.9,52.0 L 302.7,52.0 L 308.4,52.0 L 314.2,52.0 L 317.7,57.0 L 320.0,52.0 L 325.8,52.0 L 331.6,77.2 L 337.3,77.2 L 343.1,77.2 L 348.9,77.2 L 354.7,77.2 L 360.4,52.0 L 366.2,52.0 L 372.0,52.0 L 377.8,52.0 L 383.6,52.0 L 387.0,44.5 L 389.3,52.0 L 395.1,52.0 L 400.9,52.0 L 406.7,52.0 L 418.2,77.2 L 424.0,52.0" class="spark-line" />
-  <path d="M 424.0,52.0 L 632.0,60.4" class="spark-proj" />
-  <line x1="632.0" y1="60.4" x2="632.0" y2="140.0" class="spark-est-guide" />
-  <circle cx="424.0" cy="52.0" r="3.5" class="spark-now-dot" />
-  <circle cx="632.0" cy="60.4" r="9" class="spark-est-dot-halo" />
-  <circle cx="632.0" cy="60.4" r="5.5" class="spark-est-dot" />
-  <text x="632.0" y="46.4" text-anchor="end" class="spark-est-label">73°</text>
-</svg>
-        <div class="spark-caption"><span>last 6 hours</span><span>estimate →</span></div>
+        {{sparkline_svg}}
+        <div class="spark-caption"><span>last {{sparkline_hours}} hours</span><span>estimate →</span></div>
       </div>
-      <details class="why"><summary>Why this number?</summary><div class="why-body"><p>We start from how the temperature at Boeing Field (KBFI), ~5 mi south has moved over its last 8 readings — right now that's <strong>falling</strong> (about -1.8° per hour).</p><p>We&#x27;re close to the warmest part of the day, when the temperature usually stops climbing and levels off — so exactly where it peaks is harder to pin down; it&#x27;s cloudy and/or breezy, which keeps the air mixed and stops temperatures from swinging much (so we don&#x27;t expect big moves). That's why we don't just extend the line straight out.</p><p>Our trend and the National Weather Service's hourly forecast for Fremont (71°) roughly agreed, so we blended them evenly.</p><p>Finally we keep the number consistent with today's expected high and low, so a few-hours-ahead estimate can't accidentally overshoot the day's peak.</p></div></details>
-      <details class="why"><summary>Why a range instead of one number?</summary><div class="why-body"><p>No honest short-term temperature estimate is a single exact number — so we show the range we actually expect. It starts around ±1° and grows the further ahead we look.</p><p>We widened the range because the air pressure here is dropping, which often means a weather system is moving in.</p></div></details>
+      {{est_why}}
+      {{band_why}}
     </div>
 
     <!-- Today -->
     <div class="card">
-      <h2 class="card-title">Today in Fremont</h2>
+      <h2 class="card-title">Today in {{location_name}}</h2>
       <div class="two-up" style="margin-top:.8rem">
         <div class="metric">
           <div class="eyebrow">High</div>
-          <div class="num">74°</div>
-          <div class="cap">expected around 4:16 pm (the warmest part of the day)</div>
-          <details class="why"><summary>How do we know?</summary><div class="why-body"><p>Today's warmest hour hasn't arrived yet, so this is a projection: we take the recent trend, damp it as the day approaches its natural peak, and cross-check it against the National Weather Service forecast. It's a floor-ish estimate — the real peak could edge higher.</p></div></details>
+          <div class="num">{{daily_high}}°</div>
+          <div class="cap">{{high_caption}}</div>
+          {{high_why}}
         </div>
         <div class="metric">
           <div class="eyebrow">Low</div>
-          <div class="num">56°</div>
-          <div class="cap">expected overnight, around wed 5:43 am</div>
-          <details class="why"><summary>How do we know?</summary><div class="why-body"><p>This comes straight from the National Weather Service's hourly forecast for Fremont at that hour.</p></div></details>
+          <div class="num">{{daily_low}}°</div>
+          <div class="cap">{{low_caption}}</div>
+          {{low_why}}
         </div>
       </div>
     </div>
@@ -200,19 +191,19 @@
     <div class="card">
       <h2 class="card-title">Tomorrow</h2>
       <div class="tmrw-row">
-        <div class="pair">73° <small>high</small></div>
-        <div class="pair">56° <small>low</small></div>
+        <div class="pair">{{tomorrow_high}}° <small>high</small></div>
+        <div class="pair">{{tomorrow_low}}° <small>low</small></div>
       </div>
-      <p class="hint">From the National Weather Service&#x27;s next-day forecast (a real weather model, not our own trend guess). A day out, even the pros have real uncertainty.</p>
+      <p class="hint">{{tomorrow_note}}</p>
     </div>
 
     <!-- What might change things -->
     <div class="card">
       <h2 class="card-title">What might change things</h2>
-      <div style="margin-top:.6rem"><div class="signal"><span class="signal-emoji">✅</span><span>Nothing unusual brewing right now — the stations around Puget Sound aren't showing an incoming marine push or heat surge.</span></div></div>
+      <div style="margin-top:.6rem">{{signals_html}}</div>
     </div>
 
-    <div class="yesterday">Yesterday: high 81°, low 61°.</div>
+    <div class="yesterday">{{yesterday_line}}</div>
 
     <footer>
       <details>
@@ -222,18 +213,18 @@
           estimate <em>and</em> how sure we actually are — because a few hours out, nobody
           really knows the temperature to the degree.</p>
           <p>Under the hood it's a real model: it reads live observations from
-          Boeing Field (KBFI), ~5 mi south, measures the recent temperature trend, and adjusts for
+          {{obs_station_label}}, measures the recent temperature trend, and adjusts for
           where we are in the day's natural rise and fall (temperatures behave very
           differently at dawn versus mid-afternoon). It then blends in the National Weather
-          Service's own hourly forecast for Fremont's exact location, and watches
+          Service's own hourly forecast for {{location_name}}'s exact location, and watches
           weather stations around Puget Sound for early signs of a marine push or a heat
           surge moving in.</p>
           <p>When those signals get noisy, the estimate's range widens — and we tell you
           why, instead of hiding it behind a clean-looking number.</p>
         </div>
       </details>
-      <div>Observations: Boeing Field (KBFI), ~5 mi south · Forecast: NWS gridpoint for Fremont</div>
-      <div class="updated">Updated 3:25 pm · Jul 28 · no ads, no tracking, no accounts</div>
+      <div>Observations: {{obs_station_label}} · Forecast: NWS gridpoint for {{location_name}}</div>
+      <div class="updated">Updated {{generated_at}} · no ads, no tracking, no accounts</div>
     </footer>
 
   </div>

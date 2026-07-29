@@ -1,38 +1,80 @@
 # 🌦️ Fremont Weather
 
-A tiny, dependency-free weather page for the **Fremont neighborhood of Seattle, WA** — *the Center of the Universe*. It shows current conditions, the next 12 hours, and a 7-day forecast.
+A friendly, honest weather page for the **Fremont / Aurora** neighborhood of Seattle.
+
+It runs the *same* temperature model that powers the KSEA dashboard — trend
+extrapolation, diurnal (sunrise/sunset) damping, a cross-station gradient
+network that watches for marine pushes and offshore/gap-flow heat events, and a
+blend with the National Weather Service's own hourly forecast — but pointed at
+Fremont, and written for someone who just wants to understand their weather
+without needing to know what "diurnal damping" means.
+
+The honesty of the underlying model is kept intact: it shows a real uncertainty
+band, and when that band widens it tells you *why*, in plain language. What's
+gone is the jargon — and everything else the KSEA project carried: no markets,
+no betting, no trading. Just the weather.
 
 ## Live site
 
-Deployed with **GitHub Pages** from the [`docs/`](docs/) folder on `main`.
-
-Once Pages is enabled, the site is available at:
+Deployed with **GitHub Pages** from the [`docs/`](docs/) folder on `main`:
 
 ```
-https://<owner>.github.io/seattle-weather/
+https://hobbescodez.github.io/seattle-weather/
 ```
 
-## How it works
+## How the location is wired
 
-- A single self-contained [`docs/index.html`](docs/index.html) — no build step, no frameworks, no bundler.
-- Live data comes from the free [Open-Meteo](https://open-meteo.com/) forecast API, fetched client-side in the browser. **No API key and no tracking.**
-- Coordinates are pinned to Fremont, Seattle (`47.6510, -122.3500`), with temperatures in °F and times in America/Los_Angeles.
+| Piece | Source | Why |
+| --- | --- | --- |
+| **Observations** (temp, wind, dew point, pressure) | **KBFI** — Boeing Field, ~5 mi south | Nearest full ASOS station to Fremont with real ground-truth readings |
+| **Forecast + sunrise/sunset** | **NWS gridpoint** at `47.6510, -122.3500` | Fremont/Aurora's own coordinates — `/points/{lat},{lon}` → `forecastHourly` |
+| **Marine-push / offshore-flow signals** | Regional stations around Puget Sound (coast, Strait, east of the Cascades) | Physically shared across the Seattle lowland |
+
+If KBFI observations can't be reached, the page says so plainly — it **never**
+silently falls back to KSEA/Sea-Tac numbers relabeled as Fremont.
+
+## The friendly layer
+
+- **Plain-language confidence** — instead of "trend confidence 51%", a sentence
+  that names the actual reason ("we're close to the warmest part of the day,
+  when the temperature usually levels off, so exactly where it peaks is harder
+  to call") — generated from the day's real situation, not hardcoded.
+- **Expandable "Why?"** next to every key number — tap to reveal the honest
+  detail (the trend, the damping, the NWS blend weight, the gradient signals)
+  while the surface stays simple.
+- **Weather-responsive** — the background, emoji, and tone shift with the actual
+  conditions (sunny / cloudy / clear night / rain / an unsettled pattern), so it
+  feels alive rather than static.
+- **The uncertainty band and "why it widened" are always shown** — translated
+  into friendly language, never stripped out for the sake of looking clean.
+
+## Files
+
+- [`weather_estimator.py`](weather_estimator.py) — the real model, unchanged
+  except that the observing station and the forecast/sun location can be given
+  separately (so it can run for a spot with no ASOS station of its own).
+- [`build_site.py`](build_site.py) — runs the model for Fremont and renders the
+  friendly page. No markets, no betting — just the estimator's core output,
+  translated into plain language.
+- [`template.html`](template.html) — the page layout and styling.
+- [`docs/index.html`](docs/index.html) — the generated, GitHub-Pages-served page.
+
+## Regenerate locally
+
+```sh
+pip install -r requirements.txt
+python3 build_site.py          # writes docs/index.html from live data
+python3 -m http.server -d docs 8000   # preview at http://localhost:8000
+```
+
+The page is also refreshed automatically by
+[`.github/workflows/refresh.yml`](.github/workflows/refresh.yml) (hourly,
+best-effort — see the note in that file).
 
 ## Enabling GitHub Pages
 
-This is a one-time manual step in the repository settings (it can't be toggled from a commit):
+One-time, in repository settings (can't be toggled from a commit):
 
-1. Go to **Settings → Pages**.
-2. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
-3. Choose the **`main`** branch and the **`/docs`** folder, then **Save**.
-
-GitHub will publish the site within a minute or two.
-
-## Local preview
-
-Just open the file, or serve the folder:
-
-```sh
-python3 -m http.server -d docs 8000
-# then visit http://localhost:8000
-```
+1. **Settings → Pages**
+2. **Source** → *Deploy from a branch*
+3. Branch **`main`**, folder **`/docs`** → **Save**
