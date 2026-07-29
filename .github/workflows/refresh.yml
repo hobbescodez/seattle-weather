@@ -1,4 +1,4 @@
-name: Refresh Fremont Weather
+name: Refresh Seattle Weather
 
 # Regenerates docs/index.html (served by GitHub Pages) from live data by
 # running the model in build_site.py. api.weather.gov is used fully
@@ -22,7 +22,7 @@ permissions:
   contents: write # needed to commit docs/index.html back to the repo
 
 concurrency:
-  group: refresh-fremont
+  group: refresh-seattle
   cancel-in-progress: false
 
 jobs:
@@ -53,7 +53,7 @@ jobs:
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "Automated Fremont weather refresh"
+          git commit -m "Automated Seattle weather refresh"
 
           pushed=false
           for i in 1 2 3; do

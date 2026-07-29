@@ -1,12 +1,12 @@
-# 🌦️ Fremont Weather
+# 🌦️ Seattle Weather
 
-A friendly, honest weather page for the **Fremont / Aurora** neighborhood of Seattle.
+A friendly, honest weather page for **Seattle, Washington** — plus a live radar / wind / marine-layer map.
 
 It runs the *same* temperature model that powers the KSEA dashboard — trend
 extrapolation, diurnal (sunrise/sunset) damping, a cross-station gradient
 network that watches for marine pushes and offshore/gap-flow heat events, and a
 blend with the National Weather Service's own hourly forecast — but pointed at
-Fremont, and written for someone who just wants to understand their weather
+Seattle, and written for someone who just wants to understand their weather
 without needing to know what "diurnal damping" means.
 
 The honesty of the underlying model is kept intact: it shows a real uncertainty
@@ -26,12 +26,12 @@ https://hobbescodez.github.io/seattle-weather/
 
 | Piece | Source | Why |
 | --- | --- | --- |
-| **Observations** (temp, wind, dew point, pressure) | **KBFI** — Boeing Field, ~5 mi south | Nearest full ASOS station to Fremont with real ground-truth readings |
-| **Forecast + sunrise/sunset** | **NWS gridpoint** at `47.6510, -122.3500` | Fremont/Aurora's own coordinates — `/points/{lat},{lon}` → `forecastHourly` |
+| **Observations** (temp, wind, dew point, pressure) | **KBFI** — Boeing Field, ~5 mi south | Nearest full ASOS station to Seattle with real ground-truth readings |
+| **Forecast + sunrise/sunset** | **NWS gridpoint** at `47.6510, -122.3500` | Seattle's own coordinates — `/points/{lat},{lon}` → `forecastHourly` |
 | **Marine-push / offshore-flow signals** | Regional stations around Puget Sound (coast, Strait, east of the Cascades) | Physically shared across the Seattle lowland |
 
 If KBFI observations can't be reached, the page says so plainly — it **never**
-silently falls back to KSEA/Sea-Tac numbers relabeled as Fremont.
+silently falls back to KSEA/Sea-Tac numbers relabeled as Seattle.
 
 ## The friendly layer
 
@@ -47,13 +47,18 @@ silently falls back to KSEA/Sea-Tac numbers relabeled as Fremont.
   feels alive rather than static.
 - **The uncertainty band and "why it widened" are always shown** — translated
   into friendly language, never stripped out for the sake of looking clean.
+- **Radar / wind / marine-layer map** — a self-hosted [Leaflet](https://leafletjs.com)
+  map of Puget Sound with a [RainViewer](https://www.rainviewer.com/api.html) radar
+  overlay, a wind arrow, and a cloud-cover "marine layer" tint, all togglable. The map's
+  live wind + cloud come from [Open-Meteo](https://open-meteo.com) (no key) — **only for
+  the map**; the headline temperature estimate is still the real NWS-based model.
 
 ## Files
 
 - [`weather_estimator.py`](weather_estimator.py) — the real model, unchanged
   except that the observing station and the forecast/sun location can be given
   separately (so it can run for a spot with no ASOS station of its own).
-- [`build_site.py`](build_site.py) — runs the model for Fremont and renders the
+- [`build_site.py`](build_site.py) — runs the model for Seattle and renders the
   friendly page. No markets, no betting — just the estimator's core output,
   translated into plain language.
 - [`template.html`](template.html) — the page layout and styling.

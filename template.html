@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{location_name}} Weather · Seattle</title>
-  <meta name="description" content="A friendly, honest weather estimate for the {{location_name}} neighborhood of Seattle — the real model, in plain language." />
+  <title>{{location_name}} Weather</title>
+  <meta name="description" content="Live Seattle weather — an honest short-term temperature estimate from a real model, plus a radar / wind / marine-layer map." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛅</text></svg>" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
   <style>
     :root {
       --text-strong: #ffffff;
@@ -155,14 +156,33 @@
     footer .why-body { margin-top: .7rem; }
     footer a { color: var(--accent-soft); text-decoration: none; }
     .footmeta { margin-top: .3rem; }
+
+    /* --- radar / wind / marine map --- */
+    .map-toolbar { display: flex; gap: .4rem; margin: .7rem 0 .6rem; flex-wrap: wrap; }
+    .map-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-soft); border-radius: 999px; padding: .32rem .85rem; font-size: .8rem; font-weight: 600; cursor: pointer; backdrop-filter: blur(8px); }
+    .map-btn.is-on { background: var(--accent); color: #12203a; border-color: transparent; }
+    .wx-map-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--glass-border); }
+    .wx-map { height: 320px; width: 100%; background: #0d1626; }
+    .marine-tint { position: absolute; inset: 0; background: #aeb9c6; opacity: 0; display: none; pointer-events: none; transition: opacity .4s ease; z-index: 450; }
+    .map-status { color: var(--text-faint); font-size: .8rem; margin-top: .4rem; min-height: 1em; }
+    .map-legend { margin-top: .25rem; }
+    .wind-arrow { text-align: center; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.65); pointer-events: none; }
+    .wind-rot { font-size: 30px; line-height: 1; }
+    .wind-spd { font-size: 11px; font-weight: 700; margin-top: -4px; }
+    /* tame Leaflet chrome to match the site */
+    .leaflet-container { font-family: inherit; background: #0d1626; }
+    .leaflet-control-zoom a { background: rgba(20,32,58,.85); color: #fff; border: none; }
+    .leaflet-control-zoom a:hover { background: rgba(30,46,80,.95); }
+    .leaflet-bar { border: none; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+    .leaflet-control-attribution { background: rgba(10,18,34,.6) !important; color: var(--text-faint) !important; font-size: 10px; }
+    .leaflet-control-attribution a { color: var(--accent-soft) !important; }
   </style>
 </head>
 <body class="scene" data-sky="{{sky_code}}">
   <div class="content">
 
     <div class="place">
-      <div class="eyebrow">Right now</div>
-      <div class="place-name">{{location_name}}, Seattle</div>
+      <div class="place-name">{{location_name}}, Washington</div>
       <div class="place-updated">as of {{as_of_time}} · {{as_of_date}}</div>
     </div>
 
@@ -227,27 +247,103 @@
       <div style="margin-top:.7rem">{{signals_html}}</div>
     </div>
 
+    <!-- Radar / wind / marine-layer map -->
+    <div class="card">
+      <div class="card-eyebrow">Radar · wind · marine layer</div>
+      <div class="map-toolbar">
+        <button type="button" class="map-btn is-on" data-layer="radar">Rain</button>
+        <button type="button" class="map-btn is-on" data-layer="wind">Wind</button>
+        <button type="button" class="map-btn" data-layer="marine">Marine</button>
+      </div>
+      <div class="wx-map-wrap">
+        <div id="map" class="wx-map"></div>
+        <div id="marine-tint" class="marine-tint"></div>
+      </div>
+      <div id="map-status" class="map-status"></div>
+      <div class="map-legend hint">Radar: RainViewer · wind &amp; cloud: Open-Meteo · map © OpenStreetMap, © CARTO</div>
+    </div>
+
     <div class="yesterday">{{yesterday_line}}</div>
 
     <footer>
       <details>
-        <summary>How this works (and why the honesty)</summary>
+        <summary>How this works</summary>
         <div class="why-body">
-          <p>Most weather apps hand you one confident number. This one shows an estimate
-          <em>and</em> how sure we actually are — because a few hours out, nobody knows the
-          temperature to the degree.</p>
-          <p>It's a real model: it reads live observations from {{obs_station_label}},
-          measures the recent temperature trend, adjusts for where we are in the day's natural
-          rise and fall, blends in the National Weather Service's own hourly forecast for
-          {{location_name}}, and watches stations around Puget Sound for an incoming marine
-          push or heat surge. When those signals get noisy, the range widens — and we tell you
-          why instead of hiding it.</p>
+          <p>A real model: live observations from {{obs_station_label}}, the recent trend adjusted
+          for time of day, blended with the NWS hourly forecast, plus Puget-Sound stations watched
+          for an incoming marine push or heat surge. The range widens when those signals get noisy —
+          and we say why.</p>
         </div>
       </details>
-      <div>Observations: {{obs_station_label}} · Forecast: NWS gridpoint for {{location_name}}</div>
-      <div class="footmeta">Updated {{generated_at}} · animated icons by <a href="https://github.com/basmilius/weather-icons" target="_blank" rel="noopener">Meteocons</a> · no ads, no tracking</div>
+      <div>Observations: {{obs_station_label}} · Forecast: NWS gridpoint · Map: RainViewer + Open-Meteo</div>
+      <div class="footmeta">Updated {{generated_at}} · icons by <a href="https://github.com/basmilius/weather-icons" target="_blank" rel="noopener">Meteocons</a> · no ads, no tracking</div>
     </footer>
 
   </div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script>
+    (function () {
+      var SEATTLE = [47.62, -122.34];
+      var statusEl = document.getElementById('map-status');
+      function setStatus(m) { if (statusEl && !statusEl.textContent) statusEl.textContent = m || ''; }
+      if (typeof L === 'undefined') { setStatus('Map library unavailable.'); return; }
+
+      var map;
+      try {
+        map = L.map('map', { center: SEATTLE, zoom: 10, scrollWheelZoom: false });
+      } catch (e) { setStatus('Map could not start.'); return; }
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd', maxZoom: 18, attribution: '© OpenStreetMap, © CARTO'
+      }).addTo(map);
+
+      var marineEl = document.getElementById('marine-tint');
+      var layers = { radar: null, wind: L.layerGroup() };
+      var on = { radar: true, wind: true, marine: false };
+
+      // Radar — RainViewer (no key)
+      fetch('https://api.rainviewer.com/public/weather-maps.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (d) {
+          var past = (d && d.radar && d.radar.past) || [];
+          if (!past.length) throw 0;
+          var f = past[past.length - 1];
+          layers.radar = L.tileLayer(d.host + f.path + '/256/{z}/{x}/{y}/2/1_1.png', { opacity: 0.65, zIndex: 400 });
+          if (on.radar) layers.radar.addTo(map);
+        })
+        .catch(function () { setStatus('Radar unavailable right now.'); });
+
+      // Wind + marine layer — Open-Meteo (no key)
+      fetch('https://api.open-meteo.com/v1/forecast?latitude=47.62&longitude=-122.34&current=wind_speed_10m,wind_direction_10m,cloud_cover&wind_speed_unit=mph')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (d) {
+          var c = (d && d.current) || {};
+          var dir = c.wind_direction_10m || 0, spd = Math.round(c.wind_speed_10m || 0);
+          var icon = L.divIcon({ className: 'wind-arrow', iconSize: [56, 56],
+            html: '<div class="wind-rot" style="transform:rotate(' + ((dir + 180) % 360) + 'deg)">↑</div><div class="wind-spd">' + spd + ' mph</div>' });
+          L.marker(SEATTLE, { icon: icon, interactive: false }).addTo(layers.wind);
+          if (on.wind) layers.wind.addTo(map);
+          var cloud = (c.cloud_cover != null ? c.cloud_cover : 0) / 100;
+          if (marineEl) marineEl.style.opacity = Math.min(0.6, 0.12 + cloud * 0.5).toFixed(2);
+        })
+        .catch(function () { setStatus('Wind / marine data unavailable right now.'); });
+
+      // Layer toggles
+      var btns = document.querySelectorAll('.map-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].addEventListener('click', function () {
+          var key = this.getAttribute('data-layer');
+          on[key] = !on[key];
+          this.classList.toggle('is-on', on[key]);
+          if (key === 'marine') {
+            if (marineEl) marineEl.style.display = on[key] ? 'block' : 'none';
+          } else if (layers[key]) {
+            if (on[key]) { layers[key].addTo(map); } else { map.removeLayer(layers[key]); }
+          }
+        });
+      }
+    })();
+  </script>
 </body>
 </html>

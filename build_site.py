@@ -1,11 +1,11 @@
 """
-Build the friendly Fremont weather page (docs/index.html).
+Build the Seattle weather page (docs/index.html).
 
 Runs the *same* estimator that powers the KSEA dashboard - trend
 extrapolation, diurnal damping, the cross-station gradient network
 (marine-push / offshore-flow signals) and the NWS gridpoint-forecast blend -
-but pointed at the Fremont/Aurora neighborhood of Seattle: observations from
-KBFI (Boeing Field), forecast and sun times at Fremont's own coordinates.
+pointed at Seattle: observations from KBFI (Boeing Field), forecast and sun
+times at a central Seattle point.
 
 The difference from the KSEA dashboard is entirely in the *presentation*: no
 markets, no betting, no trading. It borrows that dashboard's visual language
@@ -37,14 +37,14 @@ from weather_estimator import (
 )
 
 # --- Location config -------------------------------------------------------
-# Fremont/Aurora, Seattle. Observations come from KBFI (Boeing Field), the
-# nearest full ASOS station with real ground-truth readings (~5 mi south).
-# The forecast and sunrise/sunset are computed at Fremont's own coordinates.
-# If KBFI is unreachable we flag it - we never silently swap in KSEA/Sea-Tac.
+# Seattle, WA. Observations come from KBFI (Boeing Field), the nearest full
+# ASOS station with real ground-truth readings; the forecast and sun times
+# are computed at a central Seattle point. If KBFI is unreachable we flag it -
+# we never silently swap in KSEA/Sea-Tac.
 STATION = "KBFI"
-FREMONT_LAT, FREMONT_LON = 47.6510, -122.3500
-LOCATION_NAME = "Fremont"
-OBS_STATION_LABEL = "Boeing Field (KBFI), ~5 mi south"
+SEATTLE_LAT, SEATTLE_LON = 47.6510, -122.3500
+LOCATION_NAME = "Seattle"
+OBS_STATION_LABEL = "Boeing Field (KBFI)"
 HOURS_AHEAD = 3
 SPARKLINE_HOURS = 6
 
@@ -300,14 +300,8 @@ def confidence_sentence(est, now, lat, lon):
 
 def band_sentence(lo, hi):
     half = (hi - lo) / 2
-    if half <= 1.5:
-        qual = "a fairly tight range"
-    elif half <= 3.0:
-        qual = "a normal amount of wiggle room"
-    else:
-        qual = "a wide range — there's real uncertainty right now"
-    return (f"Most likely between <strong>{lo:.0f}°</strong> and <strong>{hi:.0f}°</strong> "
-            f"(about ±{half:.0f}°, {qual}).")
+    return (f"Likely <strong>{lo:.0f}°–{hi:.0f}°</strong> "
+            f"(±{half:.0f}°).")
 
 
 WIDEN_TRANSLATIONS = {
@@ -335,18 +329,13 @@ def signals_plain(est):
     ptrend = est.get("pressure_trend_inhg_per_hr")
     if mp is not None and mp > MARINE_PUSH_INDEX_THRESHOLD:
         out.append(("wind",
-            "Cool marine air may be pushing in from the coast over the next hour or two — "
-            "Seattle's typical afternoon sea-breeze cool-down. Temperatures could dip a bit "
-            "faster than the trend alone suggests."))
+            "Cool marine air may push in soon — the usual afternoon sea-breeze cool-down."))
     if of is not None and of > OFFSHORE_FLOW_INDEX_THRESHOLD:
         out.append(("extreme-day",
-            "Warm, dry air from east of the Cascades looks like it may be sliding toward the "
-            "coast — the pattern behind most real heat spells here. It can push temperatures "
-            "higher than a normal day."))
+            "Warm, dry air may be sliding in from east of the Cascades — it can run hotter than a normal day."))
     if ptrend is not None and ptrend < -0.015:
         out.append(("compass",
-            "The air pressure is falling, which usually means a weather system is on the way "
-            "and conditions are more likely to shift."))
+            "Pressure is falling — a weather system is likely on the way."))
     return out
 
 
@@ -397,14 +386,14 @@ def build_error_page(message):
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fremont Weather — data unavailable</title>
+<title>Seattle Weather — data unavailable</title>
 <style>body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 background:linear-gradient(175deg,#191c24,#3d434f);color:#eaf0fb;display:grid;place-items:center;min-height:100vh;margin:0;padding:2rem;text-align:center}}
 .box{{max-width:32rem}}h1{{font-size:1.4rem}}p{{color:#b9c5db;line-height:1.6}}code{{color:#f8b4b4}}</style>
 </head><body><div class="box">
-<h1>🌧️ Fremont weather is briefly unavailable</h1>
+<h1>🌧️ Seattle weather is briefly unavailable</h1>
 <p>We couldn't reach live observations from {esc(OBS_STATION_LABEL)} just now, so there's
-nothing fresh to show. Rather than show another location's weather dressed up as Fremont's,
+nothing fresh to show. Rather than show another location's weather dressed up as Seattle's,
 we'd rather say nothing.</p>
 <p>This usually clears up on its own — check back in a few minutes.</p>
 <p><code>{esc(message)}</code></p>
@@ -414,9 +403,9 @@ we'd rather say nothing.</p>
 def main():
     try:
         est = estimate_temp(STATION, hours_ahead=HOURS_AHEAD,
-                            lat=FREMONT_LAT, lon=FREMONT_LON, location_name=LOCATION_NAME)
+                            lat=SEATTLE_LAT, lon=SEATTLE_LON, location_name=LOCATION_NAME)
         extremes = estimate_daily_extremes(STATION,
-                            lat=FREMONT_LAT, lon=FREMONT_LON, location_name=LOCATION_NAME)
+                            lat=SEATTLE_LAT, lon=SEATTLE_LON, location_name=LOCATION_NAME)
     except Exception as e:
         print(f"Model run failed for {STATION}: {e}")
         out_path = os.environ.get("DASHBOARD_OUTPUT_PATH", os.path.join(HERE, "docs", "index.html"))
@@ -427,7 +416,7 @@ def main():
         return
 
     now = est["as_of"]
-    lat, lon = FREMONT_LAT, FREMONT_LON
+    lat, lon = SEATTLE_LAT, SEATTLE_LON
 
     sunrise_h, sunset_h = get_sun_times(lat, lon, now.date())
     now_h = now.hour + now.minute / 60
@@ -466,31 +455,22 @@ def main():
     blend_w = est.get("blend_weight_used")
     if nws_temp is not None and blend_w is not None:
         if blend_w <= 0.3:
-            blend_line = (f"Our trend and the National Weather Service's hourly forecast for "
-                          f"Fremont ({nws_temp:.0f}°) disagreed by more than a few degrees, so we "
-                          f"leaned mostly on the forecast — it can see incoming weather our short "
-                          f"local trend can't.")
+            blend_line = (f"Trend and the NWS hourly forecast ({nws_temp:.0f}°) diverged, so we "
+                          f"leaned on the forecast.")
         else:
-            blend_line = (f"Our trend and the National Weather Service's hourly forecast for "
-                          f"Fremont ({nws_temp:.0f}°) roughly agreed, so we blended them evenly.")
+            blend_line = f"Trend and the NWS hourly forecast ({nws_temp:.0f}°) agreed; blended evenly."
     else:
-        blend_line = ("The National Weather Service hourly forecast wasn't available for this "
-                      "exact time, so we're using our own trend estimate alone.")
+        blend_line = "No NWS hourly forecast for this hour — using the trend alone."
 
     est_why = why_block("Why this number?",
-        f"<p>We start from how the temperature at {esc(OBS_STATION_LABEL)} has moved over its "
-        f"last {n_obs} readings — right now that's <strong>{trend_dir}</strong> "
-        f"(about {trend:+.1f}° per hour).</p>"
-        f"<p>{esc(conf_detail)} That's why we don't just extend the line straight out.</p>"
-        f"<p>{blend_line}</p>"
-        f"<p>Finally we keep the number consistent with today's expected high and low, so a "
-        f"few-hours-ahead estimate can't accidentally overshoot the day's peak.</p>")
+        f"<p>Recent trend at {esc(OBS_STATION_LABEL)} over its last {n_obs} readings: "
+        f"<strong>{trend_dir}</strong>, ~{trend:+.1f}°/hr — damped for time of day.</p>"
+        f"<p>{blend_line}</p>")
 
-    band_why = why_block("Why a range instead of one number?",
-        "<p>No honest short-term temperature estimate is a single exact number — so we show the "
-        "range we actually expect. It starts around ±1° and grows the further ahead we look.</p>"
-        + (f"<p>{widen_html}</p>" if widen_html else
-           "<p>Right now nothing unusual is widening it beyond that baseline.</p>"))
+    band_why = why_block("Why a range?",
+        "<p>A short-term estimate isn't one exact number; the range starts near ±1° and grows "
+        "the further out we look.</p>"
+        + (f"<p>{widen_html}</p>" if widen_html else ""))
 
     # today high / low
     high_status = extremes["high_status"]
@@ -504,29 +484,25 @@ def main():
     else:
         low_caption = f"expected overnight, around {_fmt_day_time(extremes['estimated_low_time'])}"
 
-    high_why = why_block("How do we know?",
-        (f"<p>The high already happened — {extremes['estimated_high_f']:.0f}° was the warmest "
-         f"reading at {esc(OBS_STATION_LABEL)} so far today.</p>" if high_status == "observed" else
-         "<p>Today's warmest hour hasn't arrived yet, so this is a projection: recent trend, "
-         "damped as the day nears its natural peak, cross-checked against the NWS forecast. "
-         "It's a floor-ish estimate — the real peak could edge higher.</p>"))
+    high_why = why_block("How?",
+        (f"<p>Observed — {extremes['estimated_high_f']:.0f}° was today's warmest reading so far.</p>"
+         if high_status == "observed" else
+         "<p>Projected: trend damped toward the daily peak, cross-checked against NWS. A floor — "
+         "the real peak could edge higher.</p>"))
     low_source = extremes.get("low_source")
     low_src_line = {
-        "nws_forecast": "Straight from the National Weather Service's hourly forecast for Fremont at that hour.",
-        "trend_model": "Tonight's low is close enough that our short-term trend model handles it directly.",
-        "dewpoint_fallback": "The forecast wasn't available, so we estimated it from how far the air can "
-                             "radiatively cool tonight (toward the dew point, unless clouds or wind hold it up).",
+        "nws_forecast": "From the NWS hourly forecast at that hour.",
+        "trend_model": "Close enough that the trend model handles it directly.",
+        "dewpoint_fallback": "Forecast unavailable — estimated from overnight radiative cooling toward the dew point.",
     }.get(low_source, "")
-    low_why = why_block("How do we know?", f"<p>{low_src_line}</p>")
+    low_why = why_block("How?", f"<p>{low_src_line}</p>")
 
     # tomorrow
     tmrw_source = extremes["tomorrow_high_source"]
     if tmrw_source == "nws_forecast":
-        tmrw_note = ("From the National Weather Service's next-day forecast (a real weather model, "
-                     "not our own trend guess). A day out, even the pros have real uncertainty.")
+        tmrw_note = "NWS next-day forecast — a real model, but a day out carries real uncertainty."
     else:
-        tmrw_note = ("The forecast wasn't reachable, so this is a rough persistence guess (similar to "
-                     "today, nudged by the pressure trend). Treat it as a ballpark.")
+        tmrw_note = "NWS forecast unreachable — a rough persistence guess; treat as a ballpark."
 
     # signals
     signal_notes = signals_plain(est)
@@ -534,14 +510,13 @@ def main():
         signals_html = "".join(
             f'<div class="signal"><span class="wx wx-signal">{inline_icon(ic, "")}</span>'
             f'<span class="signal-text">{esc(t)}</span></div>' for ic, t in signal_notes)
-        signals_html += ('<p class="signal-caveat">These are early-warning signals from weather '
-            'stations around Puget Sound (the coast, the Strait, and east of the mountains). '
-            'They\'re experimental — they widen our uncertainty rather than move the headline number.</p>')
+        signals_html += ('<p class="signal-caveat">Experimental early-warning signals from '
+            'Puget-Sound stations; they widen the range, not the headline number.</p>')
     else:
         calm_icon = inline_icon("clear-day" if is_day else "clear-night", "")
         signals_html = (f'<div class="signal"><span class="wx wx-signal">{calm_icon}</span>'
-            '<span class="signal-text">Nothing unusual brewing right now — the stations around '
-            'Puget Sound aren\'t showing an incoming marine push or heat surge.</span></div>')
+            '<span class="signal-text">Nothing brewing — no incoming marine push or heat surge on '
+            'the Puget-Sound stations.</span></div>')
 
     # sparkline
     try:
