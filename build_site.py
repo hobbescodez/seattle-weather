@@ -559,7 +559,6 @@ def main():
         yesterday_line = ""
 
     wind_txt = f"{est['wind_mph']:.0f} mph" if est["wind_mph"] is not None else "calm"
-    cloud_txt = f"{round(cloud_fraction * 100)}% cloud" if cloud_fraction is not None else "—"
 
     ctx = {
         "location_name": LOCATION_NAME,
@@ -572,7 +571,6 @@ def main():
         "as_of_date": now.strftime("%A, %B %-d"),
         "obs_station_label": esc(OBS_STATION_LABEL),
         "wind_txt": esc(wind_txt),
-        "cloud_txt": esc(cloud_txt),
         "pop_chip": f'<span class="chip">☔ {pop}%</span>' if pop is not None else "",
         "target_time": _fmt_day_time(est["target_time"]),
         "estimated_temp": f"{est['estimated_temp_f']:.0f}",
